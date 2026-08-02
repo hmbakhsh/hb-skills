@@ -25,4 +25,4 @@ No version field in `plugin.json` on purpose — every commit is treated as a ne
 
 Skills: `deslop`, `make-pr-easy-to-review`, `qna-form`, `verify-this`, `what-did-i-get-done`
 
-Commands: `aristotle`, `commit-and-push`, `grill-me`, `post-merge`, `session-retro`
+Commands: `aristotle`, `commit-and-push`, `new-worktree`, `post-merge`, `session-retro`
