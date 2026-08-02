@@ -1,0 +1,48 @@
+{
+  "title": "Feature X — Design Decisions",
+  "intro": "Defaults pre-selected (green). ⭐ = branches the architecture. Add a comment on any question. Hit Submit to Claude — answers post straight back, no copy-paste.",
+  "groups": [
+    {
+      "name": "A · Scope",
+      "questions": [
+        {
+          "id": "q1",
+          "num": "1",
+          "star": 1,
+          "title": "Which approach?",
+          "sub": "Short context that makes the tradeoff clear.",
+          "type": "radio",
+          "comment": true,
+          "options": [
+            { "value": "option-a", "label": "Option A — the safe default", "default": true },
+            { "value": "option-b", "label": "Option B — faster but riskier" },
+            { "value": "option-c", "label": "Option C — do nothing" }
+          ]
+        },
+        {
+          "id": "q2n",
+          "num": "2",
+          "title": "Rough headcount / scale",
+          "type": "text",
+          "placeholder": "e.g. ~8 users"
+        }
+      ]
+    },
+    {
+      "name": "B · Rollout",
+      "questions": [
+        {
+          "id": "q3",
+          "num": "3",
+          "title": "Cutover style",
+          "type": "radio",
+          "comment": true,
+          "options": [
+            { "value": "dual-run", "label": "Dual-run then flip", "default": true },
+            { "value": "hard", "label": "Hard cutover" }
+          ]
+        }
+      ]
+    }
+  ]
+}

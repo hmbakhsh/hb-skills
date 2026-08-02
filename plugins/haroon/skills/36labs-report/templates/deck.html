@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>36 Labs — Deck</title>
+<style>
+  :root{
+    --bg:#0a0a0a; --bg-2:#101010; --card:#1b1b1b; --card-2:#202020;
+    --fg:#fafafa; --muted:#b3b3b3; --faint:#7d7d7d;
+    --border:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.18);
+    --brand:#648ad9; --brand-2:#8fb0ee;
+    --ok:#34d399; --ok-bg:rgba(5,150,105,.14);
+    --warn:#f5b042; --warn-bg:rgba(245,158,11,.13);
+    --bad:#ff5c5c; --bad-bg:rgba(220,50,50,.14);
+    /* chart palette (see CHART HELPERS) */
+    --src:#648ad9; --asm:#f5b042; --fin:#34d399; --chart-cream:#cfcfca; --chart-grid:#1c1c1c;
+    --toc-w:248px;  /* contents rail width; 0 on narrow screens */
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    background:var(--bg);
+    color:var(--fg); font-family:var(--sans); overflow:hidden; -webkit-font-smoothing:antialiased;
+  }
+  .stage{position:fixed; top:54px; left:var(--toc-w); right:0; bottom:0; display:grid; place-items:center; padding:5vh 6vw 9vh}
+  .slide{display:none; width:100%; max-width:1040px; max-height:80vh; overflow:auto; animation:fade .45s ease both}
+  .slide.active{display:block}
+  @keyframes fade{from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none}}
+  .eyebrow{font-size:12px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--brand-2); margin-bottom:18px}
+  h1{font-size:clamp(34px,6vw,68px); line-height:1.02; letter-spacing:-.03em; font-weight:650; margin:0}
+  h2{font-size:clamp(28px,4.4vw,46px); line-height:1.06; letter-spacing:-.02em; font-weight:650; margin:0 0 6px}
+  .sub{font-size:clamp(16px,2vw,21px); color:var(--muted); margin-top:20px; max-width:34ch; line-height:1.5}
+  .big{font-size:clamp(40px,8vw,92px); line-height:1; letter-spacing:-.04em; font-weight:700}
+  .grad{background:linear-gradient(100deg,#fff 10%, var(--brand-2)); -webkit-background-clip:text; background-clip:text; color:transparent}
+
+  /* ── TITLE BAR (spans the content area beside the rail) ────────────────── */
+  .topbar{position:fixed; top:0; left:var(--toc-w); right:0; height:54px; display:flex; align-items:center; gap:14px;
+    padding:0 22px; background:rgba(10,10,10,.82); backdrop-filter:blur(10px); border-bottom:1px solid var(--border); z-index:30}
+  .toc-toggle{flex:none; display:grid; place-items:center; width:30px; height:30px; border-radius:8px; cursor:pointer;
+    color:var(--muted); background:var(--card); border:1px solid var(--border); transition:.15s}
+  .toc-toggle:hover{color:var(--fg); border-color:var(--border-strong)}
+  .toc-toggle svg{width:15px; height:15px}
+  .topbar .doctitle{font-size:13px; font-weight:600; letter-spacing:-.01em; color:var(--fg); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0}
+  .topbar-right{display:flex; align-items:center; gap:14px; margin-left:auto; min-width:0}
+  .docmeta{display:flex; align-items:center; gap:9px; font-family:var(--mono); font-size:11.5px; color:var(--faint); min-width:0}
+  .docmeta span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .docmeta .sep{color:var(--border-strong)}
+  .counter{font-family:var(--mono); font-size:12px; color:var(--faint); flex:none}
+  .copylink{flex:none; font-size:12px; font-weight:550; color:var(--muted); background:var(--card); border:1px solid var(--border); border-radius:8px; padding:6px 11px; cursor:pointer; font-family:var(--sans); transition:.15s}
+  .copylink:hover{color:var(--fg); border-color:var(--border-strong)}
+  .copylink.ok{color:#34d399; border-color:rgba(52,211,153,.45)}
+  @media(max-width:760px){.docmeta{display:none}}
+
+  /* ── CONTENTS RAIL (in-page; just the slide list) ──────────────────────── */
+  .toc{position:fixed; top:0; bottom:0; left:0; width:var(--toc-w); background:var(--bg-2);
+    border-right:1px solid var(--border); z-index:40; padding:18px 12px 24px; overflow-y:auto}
+  .toc .mark{width:40px; height:40px; border-radius:11px; box-shadow:0 0 0 1px var(--border); margin:2px 8px 20px}
+  .toc button.item{display:flex; gap:10px; width:100%; text-align:left; background:none; border:none; cursor:pointer; color:var(--muted);
+    font-family:var(--sans); font-size:13px; line-height:1.35; padding:9px 12px; border-radius:8px; transition:.12s}
+  .toc button.item:hover{color:var(--fg); background:rgba(255,255,255,.04)}
+  .toc button.item.on{color:var(--fg); background:rgba(255,255,255,.06)}
+  .toc button.item .ix{font-family:var(--mono); font-size:11px; color:var(--faint); flex:none; padding-top:1px}
+  body.toc-collapsed{--toc-w:0px}
+  body.toc-collapsed .toc{display:none}
+  @media(max-width:1000px){ :root{--toc-w:0px} .toc{display:none} }
+
+  .nav{position:fixed; bottom:18px; left:0; right:0; display:flex; align-items:center; justify-content:center; gap:18px; z-index:5}
+  .dots{display:flex; gap:8px; flex-wrap:wrap; max-width:60vw; justify-content:center}
+  .dots button{width:8px;height:8px;border-radius:999px;border:none;background:rgba(255,255,255,.20); cursor:pointer; padding:0; transition:.2s}
+  .dots button.on{background:var(--brand); width:22px}
+  .arrow{width:38px;height:38px;border-radius:10px;border:1px solid var(--border); background:var(--card); color:var(--fg); font-size:16px; cursor:pointer; display:grid; place-items:center; transition:.15s}
+  .arrow:hover{background:var(--card-2); border-color:var(--border-strong)}
+  .hint{position:fixed; bottom:20px; right:24px; font-size:11px; color:var(--faint); z-index:5}
+  .pill{display:inline-flex; align-items:center; gap:7px; border:1px solid var(--border); border-radius:999px; padding:6px 13px; font-size:13px; color:var(--muted)}
+  .pill.brand{border-color:rgba(100,138,217,.4); color:var(--brand-2); background:rgba(100,138,217,.10)}
+  .dot{width:7px;height:7px;border-radius:999px;background:var(--brand)}
+  .dot.warn{background:var(--warn)} .dot.bad{background:var(--bad)} .dot.ok{background:var(--ok)}
+  .badge{display:inline-flex; align-items:center; gap:6px; border-radius:7px; padding:5px 11px; font-size:14px; font-weight:600; border:1px solid transparent}
+  .badge.ok{background:var(--ok-bg); color:var(--ok); border-color:rgba(52,211,153,.25)}
+  .badge.bad{background:var(--bad-bg); color:var(--bad); border-color:rgba(255,92,92,.25)}
+  .badge.warn{background:var(--warn-bg); color:var(--warn); border-color:rgba(245,158,11,.3)}
+  .badge.neutral{background:rgba(255,255,255,.05); color:var(--muted); border-color:var(--border)}
+  code{font-family:var(--mono); font-size:.88em; background:rgba(255,255,255,.06); border:1px solid var(--border); border-radius:5px; padding:2px 7px; color:#e6e6e6}
+  .metarow{display:flex; flex-wrap:wrap; gap:10px; margin-top:30px}
+  .split{display:grid; grid-template-columns:1fr auto 1fr; gap:0; align-items:stretch; margin-top:38px}
+  .pane{padding:34px 30px; border-radius:16px; box-shadow:inset 0 0 0 1px var(--border); background:var(--card)}
+  .pane .lbl{font-size:12px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--faint)}
+  .pane .res{font-size:clamp(26px,3.4vw,38px); font-weight:700; letter-spacing:-.02em; margin-top:14px}
+  .pane.out{box-shadow:inset 0 0 0 1px rgba(255,92,92,.32)} .pane.out .res{color:var(--bad)}
+  .pane.in{box-shadow:inset 0 0 0 1px rgba(52,211,153,.32)} .pane.in .res{color:var(--ok)}
+  .pane .meta{margin-top:18px; font-family:var(--mono); font-size:12.5px; color:var(--muted); line-height:1.7}
+  .vs{display:grid; place-items:center; width:64px; font-weight:700; color:var(--faint); font-size:15px}
+  @media(max-width:760px){.split{grid-template-columns:1fr} .vs{width:auto; padding:10px}}
+  .rows{margin-top:30px; border-radius:14px; box-shadow:inset 0 0 0 1px var(--border); overflow:hidden}
+  .row{display:grid; grid-template-columns:1fr auto; gap:14px; align-items:center; padding:16px 22px; border-bottom:1px solid var(--border)}
+  .row:last-child{border-bottom:none}
+  .row .what{font-size:clamp(15px,1.9vw,18px)}
+  .row .what small{display:block; color:var(--faint); font-family:var(--mono); font-size:12px; margin-top:3px}
+  .row.diff{background:rgba(255,92,92,.06)} .row.diff .what{font-weight:650}
+  .flow{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:36px}
+  @media(max-width:760px){.flow{grid-template-columns:1fr}}
+  .fcard{background:var(--card); border-radius:14px; padding:24px 22px; box-shadow:inset 0 0 0 1px var(--border)}
+  .fcard .n{font-family:var(--mono); color:var(--brand-2); font-size:13px; margin-bottom:12px}
+  .fcard .h{font-size:18px; font-weight:650; margin-bottom:6px; letter-spacing:-.01em}
+  .fcard .d{font-size:14px; color:var(--muted); line-height:1.5}
+  .chips{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:32px}
+  @media(max-width:760px){.chips{grid-template-columns:1fr}}
+  .chip{display:flex; gap:12px; align-items:center; padding:16px 18px; border-radius:12px; background:var(--card); box-shadow:inset 0 0 0 1px var(--border)}
+  .chip .x{color:var(--ok); font-weight:800; font-size:17px}
+  .chip .t{font-size:16px; font-weight:550}
+  .insight{margin-top:34px; padding:30px 32px; border-radius:18px; background:linear-gradient(180deg, rgba(100,138,217,.12), rgba(100,138,217,.03)); box-shadow:inset 0 0 0 1px rgba(100,138,217,.3)}
+  .insight .k{font-size:clamp(22px,3vw,32px); font-weight:650; letter-spacing:-.02em; line-height:1.2}
+  .insight .k b{color:var(--brand-2)}
+  ul.lean{list-style:none; padding:0; margin:30px 0 0}
+  ul.lean li{display:flex; gap:14px; align-items:flex-start; padding:15px 0; border-bottom:1px solid var(--border); font-size:clamp(15px,2vw,19px)}
+  ul.lean li:last-child{border-bottom:none}
+  ul.lean li .ix{font-family:var(--mono); color:var(--brand-2); font-size:14px; padding-top:3px; flex:none}
+  ul.lean li span{color:var(--muted)}
+
+  /* ── STAT TILES + CHARTS (ported from the whop-analysis deck) ──────────── */
+  .tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1px; background:var(--border);
+    border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-top:34px}
+  .tile{background:var(--card); padding:24px 20px}
+  .tile .big{font-size:clamp(28px,4vw,44px); letter-spacing:-.02em; line-height:1; font-weight:700}
+  .tile .lab{font-size:12px; color:var(--muted); margin-top:9px}
+  .chart-card{margin-top:30px; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px 16px 12px}
+  .chart-wrap{position:relative; width:100%; height:340px}
+  .ch-h{font-family:var(--sans); font-weight:600; font-size:13px; color:var(--muted); margin:2px 4px 14px; display:flex; align-items:center; gap:9px}
+  .ch-h span{width:11px; height:11px; border-radius:3px; display:inline-block; flex:none}
+  .steps{margin-top:30px; display:flex; flex-direction:column; gap:1px; background:var(--border); border:1px solid var(--border); border-radius:12px; overflow:hidden}
+  .step{background:var(--card); display:grid; grid-template-columns:42px 1fr auto; gap:18px; align-items:center; padding:18px 22px}
+  .step .num{font-weight:800; font-size:1.3rem; color:var(--brand-2)}
+  .step .body b{font-size:1.02rem; display:block; margin-bottom:3px; color:#fff}
+  .step .body span{font-size:13px; color:var(--muted)}
+  .step .val{font-weight:800; font-size:1.05rem; text-align:right; white-space:nowrap}
+  .step .val small{display:block; font-family:var(--mono); font-weight:400; font-size:11px; color:var(--faint)}
+</style>
+</head>
+<body>
+
+<!-- ░░ BRAND CHROME — DO NOT EDIT (title bar, contents sidebar, nav, scripts) ░░ -->
+<div class="topbar">
+  <button class="toc-toggle" id="tocToggle" type="button" aria-label="Hide contents" title="Hide contents">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="9" y1="4" x2="9" y2="20"/></svg>
+  </button>
+  <!-- Document title — injected by deploy/publish.py from --title (hidden if the
+       file is opened before publishing). -->
+  <span class="doctitle" id="docTitle">{{REPORT_TITLE}}</span>
+  <div class="topbar-right">
+    <!-- Author + publish date are injected by deploy/publish.py at upload time
+         (it replaces these {{tokens}} with --author and the publish date). If
+         the file is opened before publishing, the script below hides leftovers. -->
+    <div class="docmeta" id="docmeta">
+      <span id="docAuthor">{{AUTHOR_EMAIL}}</span>
+      <span class="sep">·</span>
+      <span id="docDate">{{PUBLISHED_DATE}}</span>
+    </div>
+    <button class="copylink" id="copylink" type="button">Copy link</button>
+    <div class="counter"><span id="cur">1</span> / <span id="tot">1</span></div>
+  </div>
+</div>
+
+<aside class="toc" id="toc" aria-label="Contents">
+  <svg class="mark" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="36 Labs">
+    <rect width="100" height="100" rx="12" fill="#0a0a0a"/>
+    <g transform="translate(13.5 58) scale(.034 -.034)" fill="#e8e8e3">
+      <path d="M582 171 580 176Q676 176 756.5 172.0Q837 168 896.0 154.0Q955 140 987.5 110.0Q1020 80 1020 27Q1020 -39 959.5 -83.0Q899 -127 787.0 -149.0Q675 -171 521 -171Q365 -171 256.5 -142.5Q148 -114 91.5 -59.0Q35 -4 35 77H286Q288 55 319.5 42.5Q351 30 404.0 24.5Q457 19 521 19Q640 19 697.5 28.5Q755 38 755 77Q755 115 685.0 124.0Q615 133 480 133H331V203H480Q579 203 636.0 208.5Q693 214 716.5 227.5Q740 241 740 263Q740 295 688.5 307.5Q637 320 526 320Q420 320 355.5 302.5Q291 285 287 252H38Q38 319 76.0 368.0Q114 417 181.5 448.5Q249 480 337.5 495.0Q426 510 526 510Q678 510 783.5 490.5Q889 471 944.5 432.0Q1000 393 1000 333Q1000 284 969.0 253.0Q938 222 882.0 204.5Q826 187 749.5 180.0Q673 173 582 171Z"/>
+      <g transform="translate(1015 0)"><path d="M692 440Q826 440 916.5 411.0Q1007 382 1052.5 331.0Q1098 280 1098 214Q1098 148 1047.0 95.0Q996 42 888.0 11.0Q780 -20 610 -20Q420 -20 291.0 4.0Q162 28 96.0 77.0Q30 126 30 202Q30 226 41.5 258.0Q53 290 92 325Q97 330 120.5 349.5Q144 369 179.0 397.5Q214 426 254.0 459.0Q294 492 333.0 524.0Q372 556 404.5 582.0Q437 608 456.5 624.0Q476 640 476 640H814L180 202L117 152Q195 222 260.5 276.0Q326 330 390.5 366.5Q455 403 527.5 421.5Q600 440 692 440ZM588 151Q714 151 781.0 167.0Q848 183 848 219Q848 252 781.0 271.0Q714 290 588 290Q446 290 363.0 271.0Q280 252 280 219Q280 183 363.0 167.0Q446 151 588 151Z"/></g>
+    </g>
+  </svg>
+  <div id="tocList"></div>
+</aside>
+
+<div class="stage">
+  <!-- ░░ CONTENT START ░░
+       This is a PALETTE of the available slide components — one of each, for
+       styling reference only. Keep what fits your content, delete the rest,
+       reorder freely, repeat any of them. There is no required set or number of
+       slides — let the material decide what's needed.
+       Writing + structure guidance (tone, plain language, leading with context,
+       coordinating the Contents labels) lives in SKILL.md — it's advice, not a
+       fixed shape. Each slide's data-title is its Contents-rail label; keep it
+       matching the slide's heading. -->
+
+  <!-- TITLE — big hero headline + meta pills -->
+  <section class="slide active" data-title="Title">
+    <div class="eyebrow">Eyebrow label</div>
+    <h1>Hero headline,<br><span class="grad">blue accent optional.</span></h1>
+    <div class="metarow">
+      <span class="pill brand"><span class="dot"></span>Pill</span>
+      <span class="pill"><span class="dot warn"></span>Pill</span>
+      <span class="pill">2026-01-01</span>
+    </div>
+  </section>
+
+  <!-- PROSE — eyebrow + heading + a paragraph of body -->
+  <section class="slide" data-title="Heading + text">
+    <div class="eyebrow">Eyebrow</div>
+    <h2>A heading.</h2>
+    <p class="sub" style="max-width:66ch">A paragraph of running text — use for context, framing, or anything that doesn't fit a component. Keep it readable on its own.</p>
+  </section>
+
+  <!-- TILES — a row of headline stats -->
+  <section class="slide" data-title="Stat tiles">
+    <div class="eyebrow">Eyebrow</div>
+    <h2>Stat tiles.</h2>
+    <div class="tiles">
+      <div class="tile"><div class="big">1,240</div><div class="lab">label</div></div>
+      <div class="tile"><div class="big">68%</div><div class="lab">label</div></div>
+      <div class="tile"><div class="big">3 min</div><div class="lab">label</div></div>
+      <div class="tile"><div class="big">12%</div><div class="lab">label</div></div>
+    </div>
+  </section>
+
+  <!-- CHART — bar / doughnut. Data lives in CHARTS.cDemo at the bottom. -->
+  <section class="slide" data-title="Bar chart">
+    <div class="eyebrow">Eyebrow</div>
+    <h2>Bar chart.</h2>
+    <div class="chart-card">
+      <div class="ch-h"><span style="background:var(--brand)"></span>Chart title</div>
+      <div class="chart-wrap"><canvas id="cDemo"></canvas></div>
+    </div>
+  </section>
+
+  <!-- SPLIT — two panes side by side (A vs B) -->
+  <section class="slide" data-title="Split / compare">
+    <div class="eyebrow">Eyebrow</div>
+    <h2>Split / compare.</h2>
+    <div class="split">
+      <div class="pane out"><div class="lbl">Left</div><div class="res">Result</div><div class="meta">detail line<br>detail line</div></div>
+      <div class="vs">vs</div>
+      <div class="pane in"><div class="lbl">Right</div><div class="res">Result</div><div class="meta">detail line<br>detail line</div></div>
+    </div>
+  </section>
+
+  <!-- CALLOUT — one highlighted statement -->
+  <section class="slide" data-title="Callout">
+    <div class="eyebrow">Eyebrow</div>
+    <div class="insight"><div class="k">A single highlighted statement, with a <b>key word</b>.</div></div>
+    <p class="sub" style="max-width:60ch">Optional supporting line, muted.</p>
+  </section>
+
+  <!-- STEPS (cards) — a short sequence -->
+  <section class="slide" data-title="Steps">
+    <div class="eyebrow">Eyebrow</div>
+    <h2>Steps.</h2>
+    <div class="flow">
+      <div class="fcard"><div class="n">01</div><div class="h">Step</div><div class="d">Short description.</div></div>
+      <div class="fcard"><div class="n">02</div><div class="h">Step</div><div class="d">Short description.</div></div>
+      <div class="fcard"><div class="n">03</div><div class="h">Step</div><div class="d">Short description.</div></div>
+    </div>
+  </section>
+
+  <!-- RANKED LIST — label + sublabel + value per row -->
+  <section class="slide" data-title="Ranked list">
+    <div class="eyebrow">Eyebrow</div>
+    <h2>Ranked list.</h2>
+    <div class="steps">
+      <div class="step"><div class="num">1</div><div class="body"><b>Item</b><span>sublabel</span></div><div class="val">value<small>unit</small></div></div>
+      <div class="step"><div class="num">2</div><div class="body"><b>Item</b><span>sublabel</span></div><div class="val">value<small>unit</small></div></div>
+      <div class="step"><div class="num">3</div><div class="body"><b>Item</b><span>sublabel</span></div><div class="val">value<small>unit</small></div></div>
+    </div>
+  </section>
+
+  <!-- COMPARISON ROWS — list with a status per row (highlight one with .diff) -->
+  <section class="slide" data-title="Comparison rows">
+    <div class="eyebrow">Eyebrow</div>
+    <h2>Comparison rows.</h2>
+    <div class="rows">
+      <div class="row"><div class="what">Row <small>detail</small></div><div><span class="badge ok">same</span></div></div>
+      <div class="row"><div class="what">Row <small>detail</small></div><div><span class="badge ok">same</span></div></div>
+      <div class="row diff"><div class="what">Row <small>detail</small></div><div><span class="badge bad">differs</span></div></div>
+    </div>
+  </section>
+
+  <!-- CHECKLIST — a grid of ticked chips -->
+  <section class="slide" data-title="Checklist">
+    <div class="eyebrow">Eyebrow</div>
+    <h2>Checklist.</h2>
+    <div class="chips">
+      <div class="chip"><span class="x">✓</span><div class="t">Item</div></div>
+      <div class="chip"><span class="x">✓</span><div class="t">Item</div></div>
+      <div class="chip"><span class="x">✓</span><div class="t">Item</div></div>
+      <div class="chip"><span class="x">✓</span><div class="t">Item</div></div>
+    </div>
+  </section>
+
+  <!-- NUMBERED LIST — indexed items with a bold lead -->
+  <section class="slide" data-title="Numbered list">
+    <div class="eyebrow">Eyebrow</div>
+    <h2>Numbered list.</h2>
+    <ul class="lean">
+      <li><span class="ix">01</span><div><b>Item.</b> <span>Supporting detail, muted.</span></div></li>
+      <li><span class="ix">02</span><div><b>Item.</b> <span>Supporting detail, muted.</span></div></li>
+      <li><span class="ix">03</span><div><b>Item.</b> <span>Supporting detail, muted.</span></div></li>
+    </ul>
+  </section>
+
+  <!-- ░░ CONTENT END ░░ -->
+</div>
+
+<!-- ░░ NAV CHROME — DO NOT EDIT ░░ -->
+<div class="nav">
+  <button class="arrow" id="prev" aria-label="Previous">‹</button>
+  <div class="dots" id="dots"></div>
+  <button class="arrow" id="next" aria-label="Next">›</button>
+</div>
+<div class="hint">← → · space · click</div>
+
+<!-- Chart.js — only needed if a slide uses a <canvas>; harmless otherwise. -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  /* ── DECK ENGINE + CONTENTS SIDEBAR + LAZY CHARTS — DO NOT EDIT ─────────── */
+  const slides=[...document.querySelectorAll('.slide')];
+  const dotsWrap=document.getElementById('dots');
+  const cur=document.getElementById('cur'), tot=document.getElementById('tot');
+  const tocList=document.getElementById('tocList');
+  let i=0; tot.textContent=slides.length;
+
+  // Charts are registered by id in CHARTS (see CONTENT CHART DATA). A chart is
+  // built the first time its slide is shown — Chart.js needs a visible canvas to
+  // size correctly, and slides start display:none.
+  window.CHARTS = window.CHARTS || {};
+  const built = new Set();
+  function buildChartsIn(slide){
+    if(!window.Chart) return;
+    slide.querySelectorAll('canvas[id]').forEach(cv=>{
+      if(built.has(cv.id)) return;
+      const b = window.CHARTS[cv.id];
+      if(typeof b==='function'){ built.add(cv.id); b(cv); }
+    });
+  }
+
+  // Dots + Contents items, both jumping to slide n.
+  const tocLabel = s => s.getAttribute('data-title')
+    || s.querySelector('h1,h2')?.textContent?.trim()
+    || s.querySelector('.eyebrow')?.textContent?.trim() || 'Slide';
+  const tocItems=[];
+  slides.forEach((s,n)=>{
+    const b=document.createElement('button'); b.onclick=()=>go(n); dotsWrap.appendChild(b);
+    const it=document.createElement('button'); it.className='item';
+    it.innerHTML='<span class="ix">'+String(n+1).padStart(2,'0')+'</span><span>'+tocLabel(s)+'</span>';
+    it.onclick=()=>go(n); tocList.appendChild(it); tocItems.push(it);
+  });
+  const dots=[...dotsWrap.children];
+
+  function go(n){i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    dots.forEach((d,k)=>d.classList.toggle('on',k===i));
+    tocItems.forEach((t,k)=>t.classList.toggle('on',k===i));
+    cur.textContent=i+1; buildChartsIn(slides[i]);}
+  function next(){go(i+1)} function prev(){go(i-1)}
+
+  document.getElementById('next').onclick=next; document.getElementById('prev').onclick=prev;
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();next()}
+    if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();prev()}
+    if(e.key==='Home')go(0); if(e.key==='End')go(slides.length-1);});
+  document.querySelector('.stage').addEventListener('click',e=>{
+    if(e.target.closest('a,button,canvas'))return; (e.clientX/window.innerWidth>0.5?next:prev)();});
+
+  const cl=document.getElementById('copylink');
+  if(cl)cl.addEventListener('click',e=>{e.stopPropagation();
+    const t=cl.textContent; (navigator.clipboard&&navigator.clipboard.writeText(location.href));
+    cl.classList.add('ok'); cl.textContent='Copied'; setTimeout(()=>{cl.classList.remove('ok'); cl.textContent=t;},1800);});
+
+  // Show / hide the contents rail (content reflows to fill the space).
+  document.getElementById('tocToggle').onclick=()=>document.body.classList.toggle('toc-collapsed');
+
+  // Sidebar report title: clear the {{token}} if it wasn't replaced at publish.
+  (function(){const t=document.getElementById('docTitle');
+    if(t && /\{\{.*\}\}/.test(t.textContent)) t.style.display='none';})();
+
+  // Title-bar author/date: clear unreplaced {{tokens}} (file opened before
+  // publish), hide the separator when a side is missing, hide the bar if both.
+  (function(){const m=document.getElementById('docmeta'),
+      a=document.getElementById('docAuthor'), d=document.getElementById('docDate'),
+      sep=m&&m.querySelector('.sep');
+    [a,d].forEach(el=>{ if(el && /\{\{.*\}\}/.test(el.textContent)) el.textContent=''; });
+    if(sep && (!a.textContent || !d.textContent)) sep.style.display='none';
+    if(m && !a.textContent && !d.textContent) m.style.display='none';})();
+
+  go(0);
+</script>
+
+<script>
+  /* ── CONTENT CHART DATA — edit me. One CHARTS.<canvasId> per chart ───────────
+     hbar(canvas, rows, opts): horizontal bars. rows: [{label, value}].
+       opts: { colors, fmtv:(n)=>string, endfmt:(n,i)=>string }
+     doughnut(canvas, rows): rows [{label, value, color}].
+     Colours: var(--brand) accent, var(--chart-cream) default bars,
+              var(--src)/--asm/--fin for layered groups. */
+  const CC = {text:'#fafafa', muted:'#b3b3b3', grid:'#1c1c1c', cream:'#cfcfca',
+    brand:'#648ad9', src:'#648ad9', asm:'#f5b042', fin:'#34d399'};
+  const money = n => n>=1e6 ? '$'+(n/1e6).toFixed(1)+'M' : n>=1e3 ? '$'+Math.round(n/1e3)+'K' : '$'+n;
+  if(window.Chart){
+    Chart.defaults.color = CC.muted;
+    Chart.defaults.font.family = "ui-sans-serif, system-ui, -apple-system, sans-serif";
+    Chart.defaults.font.size = 12;
+  }
+  function hbar(canvas, rows, opts){
+    opts = opts || {};
+    const fmtv = opts.fmtv || money;
+    const vals = rows.map(r=>r.value);
+    return new Chart(canvas,{type:'bar',
+      data:{labels:rows.map(r=>r.label), datasets:[{data:vals,
+        backgroundColor: opts.colors||CC.cream, borderWidth:0, borderRadius:4, maxBarThickness:24}]},
+      options:{indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        animation:{duration:800, easing:'easeOutQuart'}, layout:{padding:{right:74}},
+        plugins:{legend:{display:false},
+          tooltip:{backgroundColor:'#161616', borderColor:'#333', borderWidth:1, titleColor:CC.text,
+            bodyColor:CC.muted, padding:10, displayColors:false, callbacks:{label:c=>fmtv(c.raw)}}},
+        scales:{x:{grid:{color:CC.grid}, border:{display:false}, ticks:{callback:v=>fmtv(v)}},
+          y:{grid:{display:false}, border:{display:false}, ticks:{color:CC.text, autoSkip:false}}}},
+      plugins:[{id:'ends', afterDatasetsDraw(chart){const ctx=chart.ctx, meta=chart.getDatasetMeta(0);
+        ctx.save(); ctx.font="700 12px ui-sans-serif, system-ui, sans-serif"; ctx.fillStyle=CC.muted; ctx.textBaseline='middle';
+        meta.data.forEach((bar,k)=>{ ctx.fillText((opts.endfmt||fmtv)(vals[k],k), bar.x+8, bar.y); }); ctx.restore();}}]});
+  }
+  function doughnut(canvas, rows){
+    return new Chart(canvas,{type:'doughnut',
+      data:{labels:rows.map(r=>r.label), datasets:[{data:rows.map(r=>r.value),
+        backgroundColor:rows.map(r=>r.color||CC.cream), borderColor:'#101010', borderWidth:3}]},
+      options:{responsive:true, maintainAspectRatio:false, cutout:'68%', animation:{animateRotate:true, duration:800},
+        plugins:{legend:{display:false}, tooltip:{backgroundColor:'#161616', borderColor:'#333', borderWidth:1,
+          padding:10, displayColors:false, callbacks:{label:c=>c.label+': '+money(c.raw)}}}}});
+  }
+
+  // Placeholder data — replace with your own rows. fmtv formats the values
+  // (plain numbers here; default is money like $1.2M). Colour the bar(s) you
+  // want to stand out with var(--brand), the rest var(--chart-cream).
+  CHARTS.cDemo = cv => hbar(cv, [
+    {label:'Item A', value:410},
+    {label:'Item B', value:180},
+    {label:'Item C', value:120},
+    {label:'Item D', value:90},
+    {label:'Item E', value:60},
+  ], { fmtv:v=>v.toLocaleString(), colors:['#648ad9','#cfcfca','#cfcfca','#cfcfca','#cfcfca'] });
+</script>
+</body>
+</html>

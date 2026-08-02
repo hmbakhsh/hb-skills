@@ -1,0 +1,11 @@
+{
+  "name": "haroon",
+  "displayName": "Haroon Skills",
+  "description": "Haroon's personal cross-repo skills and commands",
+  "author": {
+    "name": "Haroon Bakhsh",
+    "email": "trendlaborg@gmail.com"
+  },
+  "skills": "./skills/",
+  "commands": ["./commands/"]
+}

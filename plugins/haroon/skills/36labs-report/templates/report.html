@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>36 Labs — Report</title>
+<style>
+  :root{
+    --bg:#0a0a0a; --bg-2:#151515; --card:#1b1b1b; --card-2:#202020;
+    --fg:#fafafa; --muted:#b3b3b3; --faint:#7d7d7d;
+    --border:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.16);
+    --brand:#648ad9; --brand-strong:#4f74c4; --brand-2:#8fb0ee;
+    --ok:#34d399; --ok-bg:rgba(5,150,105,.14);
+    --warn:#f59e0b; --warn-bg:rgba(245,158,11,.13);
+    --bad:#ff5c5c; --bad-bg:rgba(220,50,50,.14);
+    --src:#648ad9; --asm:#f5b042; --fin:#34d399; --chart-cream:#cfcfca; --chart-grid:#1c1c1c;
+    --toc-w:248px;  /* contents rail width; 0 on narrow screens */
+    --radius:12px;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box} html,body{margin:0} html{scroll-behavior:smooth}
+  body{background:var(--bg);
+    color:var(--fg); font-family:var(--sans); font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;
+    padding-left:var(--toc-w);}  /* offset for the fixed contents rail */
+  .wrap{max-width:1000px; margin:0 auto; padding:34px 24px 80px}
+  a{color:var(--brand); text-decoration:none} a:hover{text-decoration:underline}
+
+  /* ── TITLE BAR (sticky over the content, beside the rail) ──────────────── */
+  .topbar{position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:14px; height:52px;
+    padding:0 18px; background:rgba(10,10,10,.82); backdrop-filter:blur(10px); border-bottom:1px solid var(--border)}
+  .toc-toggle{flex:none; display:grid; place-items:center; width:30px; height:30px; border-radius:8px; cursor:pointer;
+    color:var(--muted); background:var(--card); border:1px solid var(--border); transition:.15s}
+  .toc-toggle:hover{color:var(--fg); border-color:var(--border-strong)}
+  .toc-toggle svg{width:15px; height:15px}
+  .topbar .doctitle{font-size:13px; font-weight:600; letter-spacing:-.01em; color:var(--fg); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0}
+  .docmeta{margin-left:auto; display:flex; align-items:center; gap:9px; font-family:var(--mono); font-size:11.5px; color:var(--faint); min-width:0}
+  .docmeta span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .docmeta .sep{color:var(--border-strong)}
+  .copylink{flex:none; font-size:12px; font-weight:550; color:var(--muted); background:var(--card); border:1px solid var(--border); border-radius:8px; padding:6px 11px; cursor:pointer; font-family:var(--sans); transition:.15s}
+  .copylink:hover{color:var(--fg); border-color:var(--border-strong)}
+  .copylink.ok{color:var(--ok); border-color:rgba(52,211,153,.45)}
+  @media(max-width:720px){.topbar .tt{display:none}}
+
+  /* ── CONTENTS RAIL (in-page; just the section list, scroll-spy active) ──── */
+  .toc{position:fixed; top:0; bottom:0; left:0; width:var(--toc-w); background:var(--bg-2);
+    border-right:1px solid var(--border); z-index:40; padding:18px 12px 24px; overflow-y:auto}
+  .toc .mark{width:40px; height:40px; border-radius:11px; box-shadow:0 0 0 1px var(--border); margin:2px 8px 20px}
+  .toc a{display:flex; gap:10px; color:var(--muted); font-size:13px; line-height:1.35; padding:9px 12px; border-radius:8px; transition:.12s}
+  .toc a:hover{color:var(--fg); background:rgba(255,255,255,.04); text-decoration:none}
+  .toc a.on{color:var(--fg); background:rgba(255,255,255,.06)}
+  .toc a .ix{font-family:var(--mono); font-size:11px; color:var(--faint); flex:none; padding-top:1px}
+  body.toc-collapsed{--toc-w:0px}
+  body.toc-collapsed .toc{display:none}
+  @media(max-width:1000px){ :root{--toc-w:0px} .toc{display:none} }
+  h2.sec{scroll-margin-top:70px}
+  #top{scroll-margin-top:70px}
+
+  .top{display:flex; align-items:center; gap:14px; margin-bottom:8px}
+  .mark{width:42px;height:42px;border-radius:11px;flex:none;box-shadow:0 0 0 1px var(--border)}
+  .brandname{font-weight:600; letter-spacing:-.01em; font-size:15px}
+  .brandsub{color:var(--faint); font-size:12px}
+  h1{font-size:30px; line-height:1.15; letter-spacing:-.02em; font-weight:600; margin:22px 0 10px}
+  .lede{color:var(--muted); font-size:16px; max-width:70ch; margin:0}
+  .metarow{display:flex; flex-wrap:wrap; gap:8px; margin-top:18px}
+  .ml{font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--faint)}
+  .pill{display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border); border-radius:999px; padding:4px 11px; font-size:12px; font-weight:500; color:var(--muted)}
+  .pill.brand{border-color:rgba(100,138,217,.4); color:#acc3f0; background:rgba(100,138,217,.10)}
+  .dot{width:7px;height:7px;border-radius:999px;background:var(--brand)}
+  .dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.bad{background:var(--bad)}
+  .badge{display:inline-flex; align-items:center; gap:6px; border-radius:6px; padding:3px 8px; font-size:12px; font-weight:600; border:1px solid transparent; white-space:nowrap}
+  .badge.ok{background:var(--ok-bg); color:var(--ok); border-color:rgba(52,211,153,.25)}
+  .badge.warn{background:var(--warn-bg); color:var(--warn); border-color:rgba(245,158,11,.25)}
+  .badge.bad{background:var(--bad-bg); color:var(--bad); border-color:rgba(255,92,92,.25)}
+  .badge.neutral{background:rgba(255,255,255,.05); color:var(--muted); border-color:var(--border)}
+  .card{background:var(--card); border-radius:var(--radius); padding:22px 24px; box-shadow:inset 0 0 0 1px var(--border); margin:16px 0}
+  .card h2{font-size:13px; text-transform:uppercase; letter-spacing:.07em; color:var(--faint); font-weight:600; margin:0 0 14px}
+  .card h3{font-size:17px; font-weight:600; margin:0 0 6px; letter-spacing:-.01em}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px} @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .callout{display:flex; gap:16px; align-items:flex-start; border-radius:var(--radius); padding:20px 22px;
+    background:linear-gradient(180deg, rgba(100,138,217,.10), rgba(100,138,217,.03)); box-shadow:inset 0 0 0 1px rgba(100,138,217,.28)}
+  .callout .icon{font-size:22px; line-height:1.2} .callout strong{color:#fff}
+  code,.mono{font-family:var(--mono); font-size:.86em}
+  code{background:rgba(255,255,255,.06); border:1px solid var(--border); border-radius:5px; padding:1px 6px; color:#e6e6e6}
+  pre{background:#121212; border:1px solid var(--border); border-radius:10px; padding:14px 16px; overflow:auto; font-family:var(--mono); font-size:13px; color:#dcdcdc; line-height:1.55; margin:12px 0}
+  .cmt{color:#6f8fce}
+  table{width:100%; border-collapse:collapse; font-size:14px; margin-top:4px}
+  th,td{text-align:left; padding:11px 12px; border-bottom:1px solid var(--border); vertical-align:middle}
+  th{font-size:10px; text-transform:uppercase; letter-spacing:.07em; color:var(--faint); font-weight:600}
+  tbody tr:last-child td{border-bottom:none}
+  td.same{color:var(--ok)} td.diff{color:var(--bad)}
+  tr.outcome td{border-top:1px solid var(--border-strong); font-weight:600}
+  .flow{display:flex; flex-direction:column; gap:10px; counter-reset:s}
+  .step{display:flex; gap:14px; align-items:flex-start}
+  .step .n{counter-increment:s; flex:none; width:26px;height:26px;border-radius:8px; background:rgba(100,138,217,.14); color:#acc3f0; font-weight:600; font-size:13px; display:grid; place-items:center; box-shadow:inset 0 0 0 1px rgba(100,138,217,.3)}
+  .step .n::before{content:counter(s)} .step .body{padding-top:2px}
+  .chips{display:grid; grid-template-columns:1fr 1fr; gap:10px} @media(max-width:720px){.chips{grid-template-columns:1fr}}
+  .chip{display:flex; gap:10px; align-items:flex-start; padding:12px 14px; border-radius:10px; background:var(--card-2); box-shadow:inset 0 0 0 1px var(--border)}
+  .chip .x{color:var(--ok); font-weight:700; flex:none}
+  .chip .t{font-size:13.5px} .chip .t b{display:block; font-weight:600; margin-bottom:1px} .chip .t span{color:var(--faint)}
+  ul.clean{margin:6px 0 0; padding-left:18px} ul.clean li{margin:7px 0; color:var(--muted)} ul.clean li b{color:var(--fg); font-weight:600}
+  .kv{display:flex; gap:8px; font-size:13px; padding:7px 0; border-bottom:1px solid var(--border)} .kv:last-child{border-bottom:none}
+  .kv .k{color:var(--faint); width:130px; flex:none} .kv .v{color:var(--fg); font-family:var(--mono); font-size:12.5px; word-break:break-all}
+  .secnum{color:var(--brand); font-family:var(--mono); font-size:13px; margin-right:8px}
+  .sechead{margin:38px 0 2px} h2.sec{font-size:21px; font-weight:600; letter-spacing:-.01em; margin:0 0 4px}
+  .stat{font-size:40px; font-weight:700; letter-spacing:-.03em; line-height:1} .stat small{display:block; font-size:12px; font-weight:500; color:var(--faint); letter-spacing:.04em; text-transform:uppercase; margin-top:6px}
+  footer{margin-top:50px; color:var(--faint); font-size:12.5px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; border-top:1px solid var(--border); padding-top:18px}
+
+  /* ── STAT TILES + CHARTS (ported from the whop-analysis report) ────────── */
+  .tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1px; background:var(--border);
+    border:1px solid var(--border); border-radius:12px; overflow:hidden; margin:16px 0}
+  .tile{background:var(--card); padding:22px 20px}
+  .tile .big{font-size:clamp(24px,3.4vw,34px); letter-spacing:-.02em; line-height:1; font-weight:700}
+  .tile .lab{font-size:12px; color:var(--muted); margin-top:8px}
+  .chart-card{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px 16px 10px; margin:16px 0}
+  .chart-wrap{position:relative; width:100%; height:340px}
+  .ch-h{font-weight:600; font-size:13px; color:var(--muted); margin:2px 4px 14px; display:flex; align-items:center; gap:9px}
+  .ch-h span.sw{width:11px; height:11px; border-radius:3px; display:inline-block; flex:none}
+</style>
+</head>
+<body>
+
+<!-- ░░ BRAND CHROME — DO NOT EDIT (title bar, contents sidebar, scripts) ░░ -->
+<div class="topbar">
+  <button class="toc-toggle" id="tocToggle" type="button" aria-label="Hide contents" title="Hide contents">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="9" y1="4" x2="9" y2="20"/></svg>
+  </button>
+  <!-- Document title — injected by deploy/publish.py from --title. -->
+  <span class="doctitle" id="docTitle">{{REPORT_TITLE}}</span>
+  <!-- Author + publish date are injected by deploy/publish.py at upload time. -->
+  <div class="docmeta" id="docmeta">
+    <span id="docAuthor">{{AUTHOR_EMAIL}}</span>
+    <span class="sep">·</span>
+    <span id="docDate">{{PUBLISHED_DATE}}</span>
+  </div>
+  <button class="copylink" id="copylink" type="button">Copy link</button>
+</div>
+
+<aside class="toc" id="toc" aria-label="Contents">
+  <svg class="mark" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="36 Labs">
+    <rect width="100" height="100" rx="12" fill="#0a0a0a"/>
+    <g transform="translate(13.5 58) scale(.034 -.034)" fill="#e8e8e3">
+      <path d="M582 171 580 176Q676 176 756.5 172.0Q837 168 896.0 154.0Q955 140 987.5 110.0Q1020 80 1020 27Q1020 -39 959.5 -83.0Q899 -127 787.0 -149.0Q675 -171 521 -171Q365 -171 256.5 -142.5Q148 -114 91.5 -59.0Q35 -4 35 77H286Q288 55 319.5 42.5Q351 30 404.0 24.5Q457 19 521 19Q640 19 697.5 28.5Q755 38 755 77Q755 115 685.0 124.0Q615 133 480 133H331V203H480Q579 203 636.0 208.5Q693 214 716.5 227.5Q740 241 740 263Q740 295 688.5 307.5Q637 320 526 320Q420 320 355.5 302.5Q291 285 287 252H38Q38 319 76.0 368.0Q114 417 181.5 448.5Q249 480 337.5 495.0Q426 510 526 510Q678 510 783.5 490.5Q889 471 944.5 432.0Q1000 393 1000 333Q1000 284 969.0 253.0Q938 222 882.0 204.5Q826 187 749.5 180.0Q673 173 582 171Z"/>
+      <g transform="translate(1015 0)"><path d="M692 440Q826 440 916.5 411.0Q1007 382 1052.5 331.0Q1098 280 1098 214Q1098 148 1047.0 95.0Q996 42 888.0 11.0Q780 -20 610 -20Q420 -20 291.0 4.0Q162 28 96.0 77.0Q30 126 30 202Q30 226 41.5 258.0Q53 290 92 325Q97 330 120.5 349.5Q144 369 179.0 397.5Q214 426 254.0 459.0Q294 492 333.0 524.0Q372 556 404.5 582.0Q437 608 456.5 624.0Q476 640 476 640H814L180 202L117 152Q195 222 260.5 276.0Q326 330 390.5 366.5Q455 403 527.5 421.5Q600 440 692 440ZM588 151Q714 151 781.0 167.0Q848 183 848 219Q848 252 781.0 271.0Q714 290 588 290Q446 290 363.0 271.0Q280 252 280 219Q280 183 363.0 167.0Q446 151 588 151Z"/></g>
+    </g>
+  </svg>
+  <div id="tocList"></div>
+</aside>
+
+<div class="wrap">
+
+  <!-- ░░ BRAND HEADER — keep logo + name; edit subtitle/title/lede ░░ -->
+  <div class="top" id="top">
+    <svg class="mark" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="36 Labs">
+      <rect width="100" height="100" rx="12" fill="#0a0a0a"/>
+      <g transform="translate(13.5 58) scale(.034 -.034)" fill="#e8e8e3">
+        <path d="M582 171 580 176Q676 176 756.5 172.0Q837 168 896.0 154.0Q955 140 987.5 110.0Q1020 80 1020 27Q1020 -39 959.5 -83.0Q899 -127 787.0 -149.0Q675 -171 521 -171Q365 -171 256.5 -142.5Q148 -114 91.5 -59.0Q35 -4 35 77H286Q288 55 319.5 42.5Q351 30 404.0 24.5Q457 19 521 19Q640 19 697.5 28.5Q755 38 755 77Q755 115 685.0 124.0Q615 133 480 133H331V203H480Q579 203 636.0 208.5Q693 214 716.5 227.5Q740 241 740 263Q740 295 688.5 307.5Q637 320 526 320Q420 320 355.5 302.5Q291 285 287 252H38Q38 319 76.0 368.0Q114 417 181.5 448.5Q249 480 337.5 495.0Q426 510 526 510Q678 510 783.5 490.5Q889 471 944.5 432.0Q1000 393 1000 333Q1000 284 969.0 253.0Q938 222 882.0 204.5Q826 187 749.5 180.0Q673 173 582 171Z"/>
+        <g transform="translate(1015 0)"><path d="M692 440Q826 440 916.5 411.0Q1007 382 1052.5 331.0Q1098 280 1098 214Q1098 148 1047.0 95.0Q996 42 888.0 11.0Q780 -20 610 -20Q420 -20 291.0 4.0Q162 28 96.0 77.0Q30 126 30 202Q30 226 41.5 258.0Q53 290 92 325Q97 330 120.5 349.5Q144 369 179.0 397.5Q214 426 254.0 459.0Q294 492 333.0 524.0Q372 556 404.5 582.0Q437 608 456.5 624.0Q476 640 476 640H814L180 202L117 152Q195 222 260.5 276.0Q326 330 390.5 366.5Q455 403 527.5 421.5Q600 440 692 440ZM588 151Q714 151 781.0 167.0Q848 183 848 219Q848 252 781.0 271.0Q714 290 588 290Q446 290 363.0 271.0Q280 252 280 219Q280 183 363.0 167.0Q446 151 588 151Z"/></g>
+      </g>
+    </svg>
+    <div><div class="brandname">36&nbsp;Labs</div><div class="brandsub">Internal Platform · SUBTITLE</div></div>
+  </div>
+
+  <!-- ░░ CONTENT START ░░ -->
+
+  <!-- This is a PALETTE of the available report components — one of each, for
+       styling reference only. Keep what fits your content, delete the rest,
+       reorder freely, repeat any of them. There is no required set or number of
+       sections — let the material decide. Writing + structure guidance (tone,
+       plain language, leading with context) lives in SKILL.md as advice, not a
+       fixed shape. Section headings double as the Contents-rail labels. -->
+
+  <!-- HERO — title + one-line summary (the bottom line) -->
+  <h1>Report title</h1>
+  <p class="lede">A one-line summary / the bottom line, in plain words.</p>
+  <div class="metarow">
+    <span class="pill brand"><span class="dot"></span>Pill</span>
+    <span class="pill"><span class="dot warn"></span>Pill</span>
+    <span class="pill">2026-01-01</span>
+  </div>
+
+  <!-- CALLOUT — one highlighted statement -->
+  <div class="card" style="margin-top:26px">
+    <div class="callout"><div class="icon">🧭</div><div>
+      <h3 style="margin-bottom:6px">Callout</h3>
+      <p style="margin:0; color:var(--muted)">A highlighted statement — e.g. the single most important takeaway. Bold the <strong>key fact</strong>.</p>
+    </div></div>
+  </div>
+
+  <!-- PROSE + SIDE PANEL -->
+  <div class="sechead"><h2 class="sec"><span class="secnum">01</span>Heading + text</h2></div>
+  <div class="card">
+    <div class="grid2">
+      <div><p style="margin-top:0">A paragraph of running text. Use for context, framing, or anything that doesn't fit a component.</p></div>
+      <div>
+        <div class="ml" style="margin-bottom:8px">Side label</div>
+        <pre style="margin-top:0">a snippet, log, or quote <span class="cmt">// optional</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- STAT TILES -->
+  <div class="sechead"><h2 class="sec"><span class="secnum">02</span>Stat tiles</h2></div>
+  <div class="tiles">
+    <div class="tile"><div class="big">1,240</div><div class="lab">label</div></div>
+    <div class="tile"><div class="big">68%</div><div class="lab">label</div></div>
+    <div class="tile"><div class="big">3 min</div><div class="lab">label</div></div>
+    <div class="tile"><div class="big">12%</div><div class="lab">label</div></div>
+  </div>
+
+  <!-- CHART — data lives in CHARTS.cDemo near the bottom -->
+  <div class="sechead"><h2 class="sec"><span class="secnum">03</span>Bar chart</h2></div>
+  <div class="chart-card">
+    <div class="ch-h"><span class="sw" style="background:var(--brand)"></span>Chart title</div>
+    <div class="chart-wrap"><canvas id="cDemo"></canvas></div>
+  </div>
+
+  <!-- STEPS -->
+  <div class="sechead"><h2 class="sec"><span class="secnum">04</span>Steps</h2></div>
+  <div class="card">
+    <div class="flow">
+      <div class="step"><div class="n"></div><div class="body">First step.</div></div>
+      <div class="step"><div class="n"></div><div class="body">Second step.</div></div>
+      <div class="step"><div class="n"></div><div class="body">Third step.</div></div>
+    </div>
+  </div>
+
+  <!-- TABLE — highlight the outcome row with class="outcome" -->
+  <div class="sechead"><h2 class="sec"><span class="secnum">05</span>Table</h2></div>
+  <div class="card">
+    <table>
+      <thead><tr><th>Column</th><th>A</th><th>B</th><th style="text-align:right">Status</th></tr></thead>
+      <tbody>
+        <tr><td>Row</td><td class="mono">value</td><td class="mono">value</td><td style="text-align:right" class="same">same</td></tr>
+        <tr><td>Row</td><td class="mono">value</td><td class="mono">value</td><td style="text-align:right" class="same">same</td></tr>
+        <tr class="outcome"><td>Row</td><td><span class="badge ok">yes</span></td><td><span class="badge bad">no</span></td><td style="text-align:right" class="diff">differs</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- CHECKLIST CHIPS -->
+  <div class="sechead"><h2 class="sec"><span class="secnum">06</span>Checklist</h2></div>
+  <div class="card">
+    <div class="chips">
+      <div class="chip"><span class="x">✓</span><div class="t"><b>Item</b><span>One-line detail.</span></div></div>
+      <div class="chip"><span class="x">✓</span><div class="t"><b>Item</b><span>One-line detail.</span></div></div>
+    </div>
+  </div>
+
+  <!-- BULLET LIST -->
+  <div class="sechead"><h2 class="sec"><span class="secnum">07</span>List</h2></div>
+  <div class="card">
+    <ul class="clean">
+      <li><b>Item.</b> Supporting detail.</li>
+      <li><b>Item.</b> Supporting detail.</li>
+    </ul>
+  </div>
+
+  <!-- REFERENCE — key/value pairs + notes -->
+  <div class="sechead"><h2 class="sec"><span class="secnum">08</span>Reference</h2></div>
+  <div class="grid2">
+    <div class="card" style="margin-top:0">
+      <h2>Key / values</h2>
+      <div class="kv"><div class="k">Key</div><div class="v">value</div></div>
+      <div class="kv"><div class="k">Key</div><div class="v">value</div></div>
+    </div>
+    <div class="card" style="margin-top:0">
+      <h2>Notes</h2>
+      <p style="margin-top:0; color:var(--muted)">Caveats, definitions, or constraints.</p>
+    </div>
+  </div>
+
+  <!-- ░░ CONTENT END ░░ -->
+
+  <footer>
+    <span>36 Labs · Internal</span>
+    <span>Generated 2026-01-01</span>
+  </footer>
+</div>
+
+<!-- Chart.js — only needed if the report uses a <canvas>; harmless otherwise. -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  /* ── CONTENTS RAIL + SCROLL-SPY + COPY LINK — DO NOT EDIT ───────────────── */
+  const tocList=document.getElementById('tocList');
+
+  // Build the Contents from the hero + every numbered section heading. Each gets
+  // an id (if missing) so its TOC entry can scroll to it.
+  const heads=[{el:document.getElementById('top'), label:'Overview'}];
+  document.querySelectorAll('h2.sec').forEach((h,n)=>{
+    if(!h.id) h.id='sec-'+(n+1);
+    heads.push({el:h, label:h.textContent.replace(/^\s*\d+\s*/,'').trim()});
+  });
+  heads.forEach((h,n)=>{
+    const a=document.createElement('a'); a.href='#'+h.el.id;
+    a.innerHTML='<span class="ix">'+String(n).padStart(2,'0')+'</span><span>'+h.label+'</span>';
+    tocList.appendChild(a);
+  });
+  const links=[...tocList.querySelectorAll('a')];
+
+  function spy(){const y=window.scrollY+90; let cur=0;
+    heads.forEach((h,n)=>{ if(h.el.offsetTop<=y) cur=n; });
+    links.forEach((l,n)=>l.classList.toggle('on', n===cur));}
+  window.addEventListener('scroll', spy, {passive:true});
+  window.addEventListener('resize', spy, {passive:true});
+  spy();
+
+  const cl=document.getElementById('copylink');
+  if(cl)cl.addEventListener('click',function(){var t=cl.textContent;
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(location.href);
+    cl.classList.add('ok');cl.textContent='Copied';setTimeout(function(){cl.classList.remove('ok');cl.textContent=t;},1800);});
+
+  // Show / hide the contents rail (content reflows to fill the space).
+  document.getElementById('tocToggle').onclick=()=>document.body.classList.toggle('toc-collapsed');
+
+  // Sidebar report title: clear the {{token}} if it wasn't replaced at publish.
+  (function(){const t=document.getElementById('docTitle');
+    if(t && /\{\{.*\}\}/.test(t.textContent)) t.style.display='none';})();
+
+  // Title-bar author/date: clear unreplaced {{tokens}} (file opened before
+  // publish), hide the separator when a side is missing, hide the bar if both.
+  (function(){const m=document.getElementById('docmeta'),
+      a=document.getElementById('docAuthor'), d=document.getElementById('docDate'),
+      sep=m&&m.querySelector('.sep');
+    [a,d].forEach(el=>{ if(el && /\{\{.*\}\}/.test(el.textContent)) el.textContent=''; });
+    if(sep && (!a.textContent || !d.textContent)) sep.style.display='none';
+    if(m && !a.textContent && !d.textContent) m.style.display='none';})();
+</script>
+
+<script>
+  /* ── CONTENT CHART DATA — edit me. One CHARTS.<canvasId> per chart ───────────
+     hbar(canvas, rows, opts): horizontal bars. rows: [{label, value}].
+       opts: { colors, fmtv:(n)=>string, endfmt:(n,i)=>string }
+     doughnut(canvas, rows): rows [{label, value, color}].
+     Charts build when scrolled into view. Colours: var(--brand) accent,
+     var(--chart-cream) default, var(--src)/--asm/--fin for layered groups. */
+  const CC = {text:'#fafafa', muted:'#b3b3b3', grid:'#1c1c1c', cream:'#cfcfca',
+    brand:'#648ad9', src:'#648ad9', asm:'#f5b042', fin:'#34d399'};
+  const money = n => n>=1e6 ? '$'+(n/1e6).toFixed(1)+'M' : n>=1e3 ? '$'+Math.round(n/1e3)+'K' : '$'+n;
+  if(window.Chart){
+    Chart.defaults.color = CC.muted;
+    Chart.defaults.font.family = "ui-sans-serif, system-ui, -apple-system, sans-serif";
+    Chart.defaults.font.size = 12;
+  }
+  function hbar(canvas, rows, opts){
+    opts = opts || {};
+    const fmtv = opts.fmtv || money;
+    const vals = rows.map(r=>r.value);
+    return new Chart(canvas,{type:'bar',
+      data:{labels:rows.map(r=>r.label), datasets:[{data:vals,
+        backgroundColor: opts.colors||CC.cream, borderWidth:0, borderRadius:4, maxBarThickness:24}]},
+      options:{indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        animation:{duration:800, easing:'easeOutQuart'}, layout:{padding:{right:74}},
+        plugins:{legend:{display:false},
+          tooltip:{backgroundColor:'#161616', borderColor:'#333', borderWidth:1, titleColor:CC.text,
+            bodyColor:CC.muted, padding:10, displayColors:false, callbacks:{label:c=>fmtv(c.raw)}}},
+        scales:{x:{grid:{color:CC.grid}, border:{display:false}, ticks:{callback:v=>fmtv(v)}},
+          y:{grid:{display:false}, border:{display:false}, ticks:{color:CC.text, autoSkip:false}}}},
+      plugins:[{id:'ends', afterDatasetsDraw(chart){const ctx=chart.ctx, meta=chart.getDatasetMeta(0);
+        ctx.save(); ctx.font="700 12px ui-sans-serif, system-ui, sans-serif"; ctx.fillStyle=CC.muted; ctx.textBaseline='middle';
+        meta.data.forEach((bar,k)=>{ ctx.fillText((opts.endfmt||fmtv)(vals[k],k), bar.x+8, bar.y); }); ctx.restore();}}]});
+  }
+  function doughnut(canvas, rows){
+    return new Chart(canvas,{type:'doughnut',
+      data:{labels:rows.map(r=>r.label), datasets:[{data:rows.map(r=>r.value),
+        backgroundColor:rows.map(r=>r.color||CC.cream), borderColor:'#151515', borderWidth:3}]},
+      options:{responsive:true, maintainAspectRatio:false, cutout:'68%', animation:{animateRotate:true, duration:800},
+        plugins:{legend:{display:false}, tooltip:{backgroundColor:'#161616', borderColor:'#333', borderWidth:1,
+          padding:10, displayColors:false, callbacks:{label:c=>c.label+': '+money(c.raw)}}}}});
+  }
+
+  // Register each chart by canvas id; it builds when its card scrolls into view.
+  // Placeholder data — replace with your own rows. fmtv formats the values.
+  window.CHARTS = window.CHARTS || {};
+  CHARTS.cDemo = cv => hbar(cv, [
+    {label:'Item A', value:410},
+    {label:'Item B', value:180},
+    {label:'Item C', value:120},
+    {label:'Item D', value:90},
+    {label:'Item E', value:60},
+  ], { fmtv:v=>v.toLocaleString(), colors:['#648ad9','#cfcfca','#cfcfca','#cfcfca','#cfcfca'] });
+
+  if(window.Chart){
+    const built=new Set();
+    document.querySelectorAll('canvas[id]').forEach(cv=>{
+      const io=new IntersectionObserver(es=>{es.forEach(e=>{
+        if(e.isIntersecting && !built.has(cv.id) && typeof CHARTS[cv.id]==='function'){
+          built.add(cv.id); CHARTS[cv.id](cv); io.disconnect();
+        }});},{threshold:0.15});
+      io.observe(cv.closest('.chart-card')||cv);
+    });
+  }
+</script>
+</body>
+</html>

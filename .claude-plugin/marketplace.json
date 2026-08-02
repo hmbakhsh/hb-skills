@@ -1,0 +1,15 @@
+{
+  "name": "haroon-skills",
+  "owner": {
+    "name": "Haroon Bakhsh",
+    "email": "trendlaborg@gmail.com"
+  },
+  "description": "Haroon's personal cross-repo Claude Code skills and commands",
+  "plugins": [
+    {
+      "name": "haroon",
+      "source": "./plugins/haroon",
+      "description": "Portable skills: deslop, make-pr-easy-to-review, qna-form, verify-this, notion-todo, what-did-i-get-done, 36labs-report; commands: commit-and-push, grill-me, post-merge, session-retro, aristotle"
+    }
+  ]
+}
