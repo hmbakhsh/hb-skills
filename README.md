@@ -23,6 +23,6 @@ No version field in `plugin.json` on purpose — every commit is treated as a ne
 
 ## Contents
 
-Skills: `36labs-report`, `deslop`, `make-pr-easy-to-review`, `notion-todo`, `qna-form`, `verify-this`, `what-did-i-get-done`
+Skills: `deslop`, `make-pr-easy-to-review`, `qna-form`, `verify-this`, `what-did-i-get-done`
 
 Commands: `aristotle`, `commit-and-push`, `grill-me`, `post-merge`, `session-retro`

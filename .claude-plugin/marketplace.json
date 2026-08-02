@@ -9,7 +9,7 @@
     {
       "name": "haroon",
       "source": "./plugins/haroon",
-      "description": "Portable skills: deslop, make-pr-easy-to-review, qna-form, verify-this, notion-todo, what-did-i-get-done, 36labs-report; commands: commit-and-push, grill-me, post-merge, session-retro, aristotle"
+      "description": "Portable skills: deslop, make-pr-easy-to-review, qna-form, verify-this, what-did-i-get-done; commands: commit-and-push, grill-me, post-merge, session-retro, aristotle"
     }
   ]
 }
