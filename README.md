@@ -1,15 +1,15 @@
-# haroon-skills
+# hb-skills
 
 Personal Claude Code plugin marketplace — one source of truth for skills and slash commands shared across repos.
 
 ## Install (any machine / repo)
 
 ```
-/plugin marketplace add hmbakhsh/haroon-skills
-/plugin install haroon@haroon-skills
+/plugin marketplace add hmbakhsh/hb-skills
+/plugin install hb@hb-skills
 ```
 
-Skills are then available everywhere as `/haroon:<name>` (e.g. `/haroon:deslop`).
+Skills are then available everywhere as `/hb:<name>` (e.g. `/hb:deslop`).
 
 ## Update
 
