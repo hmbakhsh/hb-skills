@@ -5,7 +5,7 @@ Personal Claude Code plugin marketplace — one source of truth for skills and s
 ## Install (any machine / repo)
 
 ```
-/plugin marketplace add haroonbakhsh/haroon-skills
+/plugin marketplace add hmbakhsh/haroon-skills
 /plugin install haroon@haroon-skills
 ```
 
